@@ -1,0 +1,104 @@
+#!/usr/bin/env python3
+
+from io import BytesIO
+import os
+import json
+import importlib.machinery
+from sqlite3 import adapters
+from time import sleep
+import requests
+import tempfile
+import tarfile
+import gzip
+
+from pathlib import Path
+
+
+# For understand ganeti os: https://docs.ganeti.org/docs/ganeti/2.6/man/ganeti-os-interface.html
+
+utilsLoader = importlib.machinery.SourceFileLoader(
+    'utils', os.path.dirname(Path(__file__).absolute()) + '/utils.py')
+utils = utilsLoader.load_module()
+adapterLoader = importlib.machinery.SourceFileLoader(
+    'adapter', os.path.dirname(Path(__file__).absolute()) + '/local_file_adapter.py')
+adapter = adapterLoader.load_module()
+
+requests_session = requests.session()
+requests_session.mount('file://', adapter.LocalFileAdapter())
+
+
+class EnvException(Exception):
+    pass
+
+
+class NbDiskException(Exception):
+    pass
+
+
+def download(url, path):
+    r = requests_session.get(url)
+    with open(path, 'wb') as f:
+        f.write(r.content)
+
+def decompress(path, tmpdirname):
+    with tarfile.open(path, 'r:') as t:
+        t.extractall(tmpdirname)
+
+
+def ganeti_disks_count():
+    return int(os.environ['DISK_COUNT'])
+
+def ganeti_disks():
+    return [os.environ[f'DISK_{i}_PATH'] for i in range(0, ganeti_disks_count())]
+
+def import_metadata(path):
+    with open(path) as metadata:
+        return json.load(metadata)
+
+def box_disks(metadata):
+    disks =  metadata.get('disks', [])
+    if len(disks) == 0:
+        yield 'box.img'
+    for i, d in enumerate(disks):
+        yield d.get('path', f'box_{i}.img')
+
+def extract_box_disks(metadata, dir):
+    return map(lambda p: Path(dir, p), box_disks(metadata))
+
+def check_disks_count(metadata):
+    box_disks_count = len(list(box_disks(metadata)))
+    if box_disks_count != ganeti_disks_count():
+        raise NbDiskException(
+            f'''The number of disk not equal with number expected for the type
+        Current '{ganeti_disks_count()}', Expected '{box_disks_count}'
+      '''
+        )
+
+def get_env_var():
+    box_url = None
+    try:
+        box_url = os.environ['OSP_BOX_URL']
+    except KeyError:
+        raise EnvException(f'OSP_BOX_URL mandatory')
+
+    return box_url
+
+
+
+def main(url):
+    with tempfile.TemporaryDirectory() as tmpdirname:
+        path = Path(tmpdirname, 'output')
+        download(url, path)
+        decompress(path, tmpdirname)
+        metadata = import_metadata(Path(tmpdirname, 'metadata.json'))
+        check_disks_count(metadata)
+
+        for src, dst in zip(
+            extract_box_disks(metadata, tmpdirname),
+            ganeti_disks()
+        ):
+            utils.toRaw('qcow2').copy(src, dst)
+
+
+if __name__ == '__main__':
+    main(*get_env_var())

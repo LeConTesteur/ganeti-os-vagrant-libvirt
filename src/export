@@ -1,0 +1,15 @@
+#!/usr/bin/env python3
+
+import os
+import sys
+import tempfile
+import importlib.machinery
+from pathlib import Path
+
+utilsLoader = importlib.machinery.SourceFileLoader(
+    'utils', os.path.dirname(Path(__file__).absolute()) + '/utils.py')
+utils = utilsLoader.load_module()
+
+with tempfile.NamedTemporaryFile('rb') as tmpfilename:
+    utils.RawToVmdk().copy(str(os.environ['EXPORT_DEVICE']), tmpfilename.name)
+    sys.stdout.buffer.write(tmpfilename.read())
