@@ -1,0 +1,1 @@
+# ganeti-os-vagrant-libvirt
