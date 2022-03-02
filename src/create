@@ -21,6 +21,10 @@ utils = utilsLoader.load_module()
 adapterLoader = importlib.machinery.SourceFileLoader(
     'adapter', os.path.dirname(Path(__file__).absolute()) + '/local_file_adapter.py')
 adapter = adapterLoader.load_module()
+vagrantMetadataLoader = importlib.machinery.SourceFileLoader(
+    'vagrant_metadata', os.path.dirname(Path(__file__).absolute()) + '/vagrant_metadata.py')
+vagrant_metadata = vagrantMetadataLoader.load_module()
+
 
 requests_session = requests.session()
 requests_session.mount('file://', adapter.LocalFileAdapter())
@@ -80,16 +84,20 @@ def check_disks_count(metadata):
       '''
         )
 
-def get_env_var():
-    box_url = None
-    try:
-        box_url = os.environ['OSP_BOX_URL']
-    except KeyError:
-        raise EnvException(f'OSP_BOX_URL mandatory')
+def fetch_box_url():
+    box_name = box_url = box_version = box_metadata_url = None
+    box_url = os.environ.get('OSP_BOX_URL')
+    box_name = os.environ.get('OSP_BOX_NAME')
+    box_version = os.environ.get('OSP_BOX_VERSION')
+    box_metadata_url = os.environ.get('OSP_BOX_METADATA_URL')
 
-    return box_url
+    if box_url:
+        return box_url
 
+    if not box_name and not box_metadata_url:
+        raise EnvException(f'OSP_BOX_URL or OSP_BOX_NAME or OSP_BOX_METATADATA_URL mandatory')
 
+    return vagrant_metadata.fetch_box_url(box_name, box_metadata_url, box_version)
 
 def main(url):
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -107,4 +115,4 @@ def main(url):
 
 
 if __name__ == '__main__':
-    main(get_env_var())
+    main(fetch_box_url())

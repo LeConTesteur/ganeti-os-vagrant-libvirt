@@ -20,11 +20,31 @@ class TestCreateFunction(TestCase):
 
     def test_check_env_var_without_url(self):
         with self.assertRaises(create.EnvException):
-            create.get_env_var()
+            create.fetch_box_url()
 
     @mock.patch.dict(os.environ, {"OSP_BOX_URL": "test"})
     def test_check_env_var_with_bad_type(self):
-        create.get_env_var()
+        create.fetch_box_url()
+
+    @mock.patch.dict(os.environ, {"OSP_BOX_NAME": "test"})
+    @mock.patch('vagrant_metadata.fetch_box_url')
+    def test_check_env_var_with_bad_type(self, mock_fetch):
+        mock_fetch.return_value = 'test_return'
+        self.assertEqual(create.fetch_box_url(), 'test_return') 
+        mock_fetch.assert_called_with('test', None, None)
+
+    @mock.patch.dict(os.environ, {"OSP_BOX_METADATA_URL": "http://test.com"})
+    @mock.patch('vagrant_metadata.fetch_box_url')
+    def test_check_env_var_with_bad_type(self, mock_fetch):
+        create.fetch_box_url()
+        mock_fetch.assert_called_with(None, "http://test.com", None)
+
+
+    @mock.patch.dict(os.environ, {"OSP_BOX_METADATA_URL": "http://test.com", "OSP_BOX_VERSION": "1.1.1"})
+    @mock.patch('vagrant_metadata.fetch_box_url')
+    def test_check_env_var_with_bad_type(self, mock_fetch):
+        create.fetch_box_url()
+        mock_fetch.assert_called_with(None, "http://test.com", "1.1.1")
 
     @mock.patch.dict(os.environ, {"DISK_COUNT": "2", "DISK_0_PATH": "p0","DISK_1_PATH": "p1"})
     def test_ganeti_disks(self):
