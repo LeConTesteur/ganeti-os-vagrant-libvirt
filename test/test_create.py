@@ -1,9 +1,11 @@
+from ast import arg
 from logging import raiseExceptions
 import os
 import importlib.machinery
 import subprocess
 import tempfile
 import json
+from time import sleep
 import requests
 
 from pathlib import Path, PosixPath
@@ -93,8 +95,11 @@ class TestCreateMain(TestCase):
             ))
 
         subprocess.run(['touch', *img_files], check=True)
-        subprocess.run(['tar', '-cf', test_box, '-C',
-                       tmp_test_dir, relative_metadata, *relative_img_paths], check=True)
+        subprocess.run(
+            ['tar', '-cf', test_box, '-C',
+                tmp_test_dir, relative_metadata, *relative_img_paths],
+            check=True)
+
     def tearDown(self) -> None:
         for f in self.tmp_test_files:
             os.remove(f)
