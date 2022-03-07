@@ -1,6 +1,5 @@
-VERSION:=0.1
-REVISION=1
-DEB_NAME=ganeti-os-vagrant-libvirt_$(VERSION)-$(REVISION)_amd64
+VERSION:=0.0.1
+DEB_NAME=ganeti-os-vagrant-libvirt_$(VERSION)_amd64
 DEST=dist/$(DEB_NAME)
 DEST_DEB_PATH=$(DEST).deb
 
