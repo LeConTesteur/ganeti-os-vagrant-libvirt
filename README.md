@@ -30,6 +30,12 @@ If **box_url** is set, *ganeti-os-vagrant-libvirt* download directly the box.
 If **box_url** is not set, *ganeti-os-vagrant-libvirt* download the metadata json file and search the box url. If **box_version** is not set *ganeti-os-vagrant-libvirt* use the last version.
 When **box_metadata_url** is not set, **box_metadata_url** is calculate with **box_name**.
 
+It likes with ganeti command :
+
+```sh
+gnt-install add -O 'box_name=debian/bullseye64' ...
+```
+
 ## Development and testing
 
 ### Launch tests :
