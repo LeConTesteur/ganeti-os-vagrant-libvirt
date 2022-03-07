@@ -8,8 +8,6 @@ from pathlib import Path
 from unittest import TestCase, mock, main as unittest_main
 from packaging import version as packagingVersion
 
-from importlib_metadata import version
-
 metadataLoader = importlib.machinery.SourceFileLoader(
     'metadata', os.path.dirname(Path(__file__).absolute()) + '/../src/vagrant_metadata.py')
 metadata = metadataLoader.load_module()
