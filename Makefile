@@ -6,8 +6,8 @@ DEST_DEB_PATH=$(DEST).deb
 
 .PHONY: dist
 
-test: $(wildcard test/*)
-	python3 -m unittest discover -s test
+test: $(wildcard tests/*)
+	python3 -m unittest discover -s tests
 
 
 $(DEST)/usr/share/ganeti/ganeti-os-vagrant-libvirt: $(wildcard src/*)
