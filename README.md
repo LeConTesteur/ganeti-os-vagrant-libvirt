@@ -10,10 +10,10 @@ pip install packaging dataclasses-json requests
 ```
 ## Installation 
 
-For install *ganeti-os-vagrant-libvirt*, use follows the command :
+For install *ganeti-os-vagrant-libvirt*, build it for the source and use follows the command on the server :
 
 ```sh
-apt install ganeti-os-vagrant-libvirt
+dpkg -i ganeti-os-vagrant-libvirt_X.X-X_amd64.deb
 ```
 
 The installation folder is */usr/share/ganeti/os/*
