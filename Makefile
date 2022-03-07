@@ -7,7 +7,7 @@ DEST_DEB_PATH=$(DEST).deb
 .PHONY: dist
 
 test: $(wildcard tests/*)
-	python3 -m unittest discover -s tests
+	tox test
 
 
 $(DEST)/usr/share/ganeti/ganeti-os-vagrant-libvirt: $(wildcard src/*)
@@ -22,3 +22,6 @@ $(DEST_DEB_PATH): $(DEST)/usr/share/ganeti/ganeti-os-vagrant-libvirt $(DEST)/DEB
 	dpkg-deb --build --root-owner-group $(DEST)
 
 dist: $(DEST_DEB_PATH)
+
+pybuild:
+	tox build
