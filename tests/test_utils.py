@@ -1,16 +1,12 @@
-from logging import raiseExceptions
 import os
 import importlib.machinery
-import subprocess
-import tempfile
-import requests
 
-from pathlib import Path, PosixPath
+from pathlib import Path
 from unittest import TestCase, mock, main as unittest_main
 
 utilsLoader = importlib.machinery.SourceFileLoader(
     'utils', os.path.dirname(Path(__file__).absolute()) + '/../src/utils.py')
-utils = utilsLoader.load_module()
+utils = utilsLoader.load_module("utils")
 
 
 class Testutils(TestCase):
@@ -30,7 +26,7 @@ class Testutils(TestCase):
 
     @mock.patch('subprocess.run')
     def test_copy_disk_qcow2toraw(self, mock_run):
-        utils.toRaw('qcow2').copy('/tmp/src', '/tmp/dst')
+        utils.to_raw('qcow2').copy('/tmp/src', '/tmp/dst')
         self.assertTrue(mock_run.called)
         mock_run.assert_called_once_with(
             ['/usr/bin/qemu-img', 'convert', '-f', 'qcow2', '-O', 'raw', '/tmp/src', '/tmp/dst'], check=True)

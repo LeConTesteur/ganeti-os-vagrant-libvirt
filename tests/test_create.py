@@ -1,19 +1,66 @@
-from ast import arg
-from logging import raiseExceptions
 import os
 import importlib.machinery
 import subprocess
-import tempfile
 import json
-from time import sleep
 import requests
+import requests_mock
 
 from pathlib import Path, PosixPath
 from unittest import TestCase, mock, main as unittest_main
 
 smcLoader = importlib.machinery.SourceFileLoader(
     'create', os.path.dirname(Path(__file__).absolute()) + '/../src/create')
-create = smcLoader.load_module()
+create = smcLoader.load_module("create")
+
+json_mock = '''
+{
+  "description":"Test",
+  "short_description":"description",
+  "name":"test",
+  "versions":[
+     {
+        "version":"1.0.1",
+        "status":"active",
+        "description_html":"<h1></h1>",
+        "description_markdown":"",
+        "providers":[
+           {
+              "name":"libvirt",
+              "url":"https://test.com/test_v1.0.1.box",
+              "checksum":null,
+              "checksum_type":null
+           },
+           {
+              "name":"virtualbox",
+              "url":"https://test.com/test_v1.0.1.box",
+              "checksum":null,
+              "checksum_type":null
+           }
+        ]
+     },
+     {
+        "version":"1.0.0",
+        "status":"active",
+        "description_html":"<h1></h1>",
+        "description_markdown":"",
+        "providers":[
+           {
+              "name":"libvirt",
+              "url":"https://test.com/test_v1.0.0.box",
+              "checksum":null,
+              "checksum_type":null
+           },
+           {
+              "name":"virtualbox",
+              "url":"https://test.com/test_v1.0.0.box",
+              "checksum":null,
+              "checksum_type":null
+           }
+        ]
+     }
+  ]
+}
+        '''
 
 
 class TestCreateFunction(TestCase):
@@ -26,31 +73,43 @@ class TestCreateFunction(TestCase):
     def test_check_env_var_with_bad_type(self):
         create.fetch_box_url()
 
-    @mock.patch.dict(os.environ, {"OSP_BOX_NAME": "test"})
-    @mock.patch('vagrant_metadata.fetch_box_url')
-    def test_check_env_var_with_bad_type(self, mock_fetch):
-        mock_fetch.return_value = 'test_return'
-        self.assertEqual(create.fetch_box_url(), 'test_return') 
-        mock_fetch.assert_called_with('test', None, None)
+    @mock.patch.dict(os.environ, {"OSP_BOX_NAME": "test/test"})
+    @requests_mock.Mocker()
+    def test_check_env_var_with_name(self, mock_request):
+        mock_request.get(
+            'https://app.vagrantup.com/test/boxes/test', text=json_mock)
+        self.assertEqual(create.fetch_box_url(),
+                         'https://test.com/test_v1.0.1.box')
 
-    @mock.patch.dict(os.environ, {"OSP_BOX_METADATA_URL": "http://test.com"})
-    @mock.patch('vagrant_metadata.fetch_box_url')
-    def test_check_env_var_with_bad_type(self, mock_fetch):
-        create.fetch_box_url()
-        mock_fetch.assert_called_with(None, "http://test.com", None)
+    @mock.patch.dict(os.environ, {"OSP_BOX_NAME": "test/test", "OSP_BOX_VERSION": "1.0.0"})
+    @requests_mock.Mocker()
+    def test_check_env_var_with_name_and_with_version(self, mock_request):
+        mock_request.get(
+            'https://app.vagrantup.com/test/boxes/test', text=json_mock)
+        self.assertEqual(create.fetch_box_url(),
+                         'https://test.com/test_v1.0.0.box')
 
+    @mock.patch.dict(os.environ, {"OSP_BOX_METADATA_URL": "https://app.vagrantup.com/test/boxes/test"})
+    @requests_mock.Mocker()
+    def test_check_env_var_with_box_metadata_url(self, mock_request):
+        mock_request.get(
+            'https://app.vagrantup.com/test/boxes/test', text=json_mock)
+        self.assertEqual(create.fetch_box_url(),
+                         'https://test.com/test_v1.0.1.box')
 
-    @mock.patch.dict(os.environ, {"OSP_BOX_METADATA_URL": "http://test.com", "OSP_BOX_VERSION": "1.1.1"})
-    @mock.patch('vagrant_metadata.fetch_box_url')
-    def test_check_env_var_with_bad_type(self, mock_fetch):
-        create.fetch_box_url()
-        mock_fetch.assert_called_with(None, "http://test.com", "1.1.1")
+    @mock.patch.dict(os.environ, {"OSP_BOX_METADATA_URL": "https://app.vagrantup.com/test/boxes/test", "OSP_BOX_VERSION": "1.0.0"})
+    @requests_mock.Mocker()
+    def test_check_env_var_with_box_metadata_url_and_version(self, mock_request):
+        mock_request.get(
+            'https://app.vagrantup.com/test/boxes/test', text=json_mock)
+        self.assertEqual(create.fetch_box_url(),
+                         'https://test.com/test_v1.0.0.box')
 
-    @mock.patch.dict(os.environ, {"DISK_COUNT": "2", "DISK_0_PATH": "p0","DISK_1_PATH": "p1"})
+    @mock.patch.dict(os.environ, {"DISK_COUNT": "2", "DISK_0_PATH": "p0", "DISK_1_PATH": "p1"})
     def test_ganeti_disks(self):
-        self.assertListEqual(create.ganeti_disks(), 
-            [ "p0", "p1"]
-        )
+        self.assertListEqual(create.ganeti_disks(),
+                             ["p0", "p1"]
+                             )
 
     def test_box_disks_with_empty_metadata(self):
         self.assertListEqual(
@@ -61,7 +120,7 @@ class TestCreateFunction(TestCase):
     def test_box_disks_with_3_disks(self):
         self.assertListEqual(
             list(create.box_disks(
-                {'disks': [{'path':'p0'}, {}, {'path':'p2'}]})
+                {'disks': [{'path': 'p0'}, {}, {'path': 'p2'}]})
             ),
             ['p0', 'box_1.img', 'p2']
         )
@@ -76,8 +135,9 @@ class TestCreateFunction(TestCase):
     def test_check_disks_count_when_have_not_same_count(self):
         with self.assertRaises(create.NbDiskException):
             create.check_disks_count(
-                {'disks': [{'path':'p0'}, {}, {'path':'p2'}]}
+                {'disks': [{'path': 'p0'}, {}, {'path': 'p2'}]}
             )
+
 
 tmp_test_dir = '/tmp/unittest_os_ganeti'
 tmp_test_dir_for_main = '/tmp/unittest_os_ganeti_main'
@@ -142,6 +202,7 @@ class TestCreateMain(TestCase):
         ]
         mock_run.assert_has_calls(call_args, any_order=True)
         self.assertFalse(os.path.exists(tmp_test_dir_for_main))
+
 
 if __name__ == '__main__':
     unittest_main()

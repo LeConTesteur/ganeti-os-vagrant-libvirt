@@ -2,15 +2,13 @@
 
 import os
 import json
-from shutil import ExecError
 import requests
 import tempfile
 import subprocess
 import importlib.machinery
 
-from sqlite3 import adapters
-from time import sleep
 from pathlib import Path
+from vagrant_metadata import fetch, forge_metadata_url
 
 
 # For understand ganeti os: https://docs.ganeti.org/docs/ganeti/2.6/man/ganeti-os-interface.html
@@ -21,9 +19,6 @@ utils = utilsLoader.load_module()
 adapterLoader = importlib.machinery.SourceFileLoader(
     'adapter', os.path.dirname(Path(__file__).absolute()) + '/local_file_adapter.py')
 adapter = adapterLoader.load_module()
-vagrantMetadataLoader = importlib.machinery.SourceFileLoader(
-    'vagrant_metadata', os.path.dirname(Path(__file__).absolute()) + '/vagrant_metadata.py')
-vagrant_metadata = vagrantMetadataLoader.load_module()
 
 
 requests_session = requests.session()
@@ -46,7 +41,8 @@ def download(url, path):
 
 def decompress(path, tmpdirname):
     with subprocess.Popen(
-        ["tar", "--extract", "--file", str(path), "--directory", str(tmpdirname)],
+        ["tar", "--extract", "--file",
+            str(path), "--directory", str(tmpdirname)],
         stdout=subprocess.PIPE,
         stderr=subprocess.PIPE
     ) as proc:
@@ -58,22 +54,27 @@ def decompress(path, tmpdirname):
 def ganeti_disks_count():
     return int(os.environ['DISK_COUNT'])
 
+
 def ganeti_disks():
     return [os.environ[f'DISK_{i}_PATH'] for i in range(0, ganeti_disks_count())]
+
 
 def import_metadata(path):
     with open(path) as metadata:
         return json.load(metadata)
 
+
 def box_disks(metadata):
-    disks =  metadata.get('disks', [])
+    disks = metadata.get('disks', [])
     if len(disks) == 0:
         yield 'box.img'
     for i, d in enumerate(disks):
         yield d.get('path', f'box_{i}.img')
 
+
 def extract_box_disks(metadata, dir):
     return map(lambda p: Path(dir, p), box_disks(metadata))
+
 
 def check_disks_count(metadata):
     box_disks_count = len(list(box_disks(metadata)))
@@ -83,6 +84,7 @@ def check_disks_count(metadata):
         Current '{ganeti_disks_count()}', Expected '{box_disks_count}'
       '''
         )
+
 
 def fetch_box_url():
     box_name = box_url = box_version = box_metadata_url = None
@@ -95,9 +97,16 @@ def fetch_box_url():
         return box_url
 
     if not box_name and not box_metadata_url:
-        raise EnvException(f'OSP_BOX_URL or OSP_BOX_NAME or OSP_BOX_METATADATA_URL mandatory')
+        raise EnvException(
+            f'OSP_BOX_URL or OSP_BOX_NAME or OSP_BOX_METATADATA_URL mandatory')
+    if not box_metadata_url:
+        box_metadata_url = forge_metadata_url(box_name)
 
-    return vagrant_metadata.fetch_box_url(box_name, box_metadata_url, box_version)
+    metadata = fetch(box_metadata_url)
+    if not box_version:
+        return metadata.url_for_youngest_version('libvirt')
+    return metadata.url_for(box_version, 'libvirt')
+
 
 def main(url):
     with tempfile.TemporaryDirectory() as tmpdirname:
@@ -111,7 +120,7 @@ def main(url):
             extract_box_disks(metadata, tmpdirname),
             ganeti_disks()
         ):
-            utils.toRaw('qcow2').copy(src, dst)
+            utils.to_raw('qcow2').copy(src, dst)
 
 
 if __name__ == '__main__':
