@@ -1,4 +1,4 @@
 Package: ganeti-os-vagrant-libvirt
 Version: 0.1
-Architecture: arm64
+Architecture: amd64
 Description: OS Ganeti for create instance from libvirt vagrant box
