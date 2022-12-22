@@ -6,7 +6,7 @@
 *ganeti-os-vagrant-libvirt* depends on python packages. Run follows command for install them :
 
 ```sh
-pip install packaging dataclasses-json requests
+pip install packaging dataclasses-json requests python-vagrant-metadata
 ```
 ## Installation 
 
