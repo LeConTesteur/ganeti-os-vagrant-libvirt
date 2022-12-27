@@ -4,4 +4,4 @@ box_version
 box_metadata_url
 export_import_format
 export_compress
-export_import_spooled_temporary_file
+export_import_memory_temporary_file

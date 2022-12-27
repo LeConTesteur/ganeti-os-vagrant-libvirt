@@ -18,10 +18,10 @@ def send_data(file_object):
 def main():
     export_compress = os.environ.get('OSP_EXPORT_COMPRESS', False)
     export_format = os.environ.get('OSP_EXPORT_IMPORT_FORMAT', 'vmdk')
-    is_spooled_temp_file = os.environ.get('OSP_EXPORT_IMPORT_SPOOLED_TEMPORARY_FILE', False)
+    prefix_temp_file = os.environ.get('OSP_EXPORT_IMPORT_PREFIX_TEMPORARY_FILE', '/tmp')
     diskUtils.raise_if_unsupported_disk_format(export_format)
 
-    with diskUtils.get_context_manager_tmp_file(is_spooled_temp_file, mode='rb') as tmpfile:
+    with tempfile.NamedTemporaryFile(mode='rb', prefix=prefix_temp_file) as tmpfile:
         diskUtils.from_raw_to(export_format)(str(os.environ['EXPORT_DEVICE']), tmpfile.name, compress=bool(export_compress))
         send_data(tmpfile)
 

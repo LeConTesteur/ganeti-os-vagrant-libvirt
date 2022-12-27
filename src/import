@@ -15,11 +15,11 @@ def read_data(file_object):
 
 def main():
     import_format = os.environ.get('OSP_EXPORT_IMPORT_FORMAT', 'vmdk')
-    is_spooled_temp_file = os.environ.get('OSP_EXPORT_IMPORT_SPOOLED_TEMPORARY_FILE', False)
+    prefix_temp_file = os.environ.get('OSP_EXPORT_IMPORT_PREFIX_TEMPORARY_FILE', '/tmp')
 
     diskUtils.raise_if_unsupported_disk_format(import_format)
 
-    with diskUtils.get_context_manager_tmp_file(is_spooled_temp_file, mode='wb') as tmpfile:
+    with tempfile.NamedTemporaryFile(mode='wb', prefix=prefix_temp_file) as tmpfile:
         read_data(tmpfile)
         diskUtils.to_raw_from(import_format)(tmpfile.name, str(os.environ['IMPORT_DEVICE']))
 

@@ -77,31 +77,16 @@ class TestExportMain(TestCase):
 
     @mock.patch('export.send_data')
     @mock.patch.object(tempfile, 'NamedTemporaryFile')
-    @mock.patch.object(tempfile, 'SpooledTemporaryFile')
     @mock.patch('subprocess.run')
-    @mock.patch.dict(os.environ, {'OSP_EXPORT_IMPORT_SPOOLED_TEMPORARY_FILE':'TRUE', 'EXPORT_DEVICE': '/export/test'})
-    def test_main_with_spooled_option(self, mock_run, mock_tempfile_spooled, mock_tempfile_named, mock_send_data):
+    @mock.patch.dict(os.environ, {'OSP_EXPORT_IMPORT_PREFIX_TEMPORARY_FILE':'/test/', 'EXPORT_DEVICE': '/export/test'})
+    def test_main_with_spooled_option(self, mock_run, mock_tempfile_named, mock_send_data):
         mock_tempfile_named_enter = mock_named_temporary_file('/tmp/export-test')
         mock_tempfile_named.return_value = mock_tempfile_named_enter
-        mock_tempfile_spooled_enter = mock_named_temporary_file('')
-        mock_tempfile_spooled.return_value = mock_tempfile_spooled_enter
-        export.main()
-        self.assertTrue(mock_tempfile_named.not_called)
-        self.assertTrue(mock_tempfile_spooled.called)
-
-    @mock.patch('export.send_data')
-    @mock.patch.object(tempfile, 'NamedTemporaryFile')
-    @mock.patch.object(tempfile, 'SpooledTemporaryFile')
-    @mock.patch('subprocess.run')
-    @mock.patch.dict(os.environ, {'OSP_EXPORT_IMPORT_SPOOLED_TEMPORARY_FILE':'', 'EXPORT_DEVICE': '/export/test'})
-    def test_main_without_spooled_option(self, mock_run, mock_tempfile_spooled, mock_tempfile_named, mock_send_data):
-        mock_tempfile_named_enter = mock_named_temporary_file('/tmp/export-test')
-        mock_tempfile_named.return_value = mock_tempfile_named_enter
-        mock_tempfile_spooled_enter = mock_named_temporary_file('')
-        mock_tempfile_spooled.return_value = mock_tempfile_spooled_enter
         export.main()
         self.assertTrue(mock_tempfile_named.called)
-        self.assertTrue(mock_tempfile_spooled.not_called)
+        mock_tempfile_named.assert_has_calls([
+            mock.call(mode='rb', prefix='/test/'),
+        ])
 
 if __name__ == '__main__':
     unittest_main()

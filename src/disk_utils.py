@@ -2,7 +2,6 @@
 Utils function for qemu convert
 """
 import subprocess
-import tempfile
 from functools import partial
 
 # see doc https://docs.ganeti.org/docs/ganeti/2.6/man/ganeti-os-interface.html
@@ -59,12 +58,3 @@ def to_raw_from(disk_format: str) -> copy_disk:
     convert to raw
     """
     return partial(copy_disk, format_in=disk_format, format_out='raw')
-
-def get_context_manager_tmp_file(is_spooled_temp_file, mode):
-    """
-    If is_spooled_temp_file is True, return SpooledTemporaryFile
-    If is_spooled_temp_file is False, return NamedTemporaryFile
-    """
-    if is_spooled_temp_file:
-        return tempfile.SpooledTemporaryFile(mode=mode)
-    return tempfile.NamedTemporaryFile(mode=mode)
