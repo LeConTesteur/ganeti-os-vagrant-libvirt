@@ -6,10 +6,22 @@ import tempfile
 import importlib.machinery
 from pathlib import Path
 
-utilsLoader = importlib.machinery.SourceFileLoader(
-    'utils', os.path.dirname(Path(__file__).absolute()) + '/utils.py')
-utils = utilsLoader.load_module()
+diskUtilsLoader = importlib.machinery.SourceFileLoader(
+    'disk_utils', os.path.dirname(Path(__file__).absolute()) + '/disk_utils.py')
+diskUtils = diskUtilsLoader.load_module()
 
-with tempfile.NamedTemporaryFile('wb') as tmpfilename:
-    tmpfilename.write(sys.stdin.buffer.read())
-    utils.VmdkToRaw().copy(tmpfilename.name, str(os.environ['IMPORT_DEVICE']))
+def read_data(file_object):
+    file_object.write(sys.stdin.buffer.read())
+
+def main():
+    import_format = os.environ.get('OSP_EXPORT_IMPORT_FORMAT', 'vmdk')
+    is_spooled_temp_file = os.environ.get('OSP_EXPORT_IMPORT_SPOOLED_TEMPORARY_FILE', False)
+
+    diskUtils.raise_if_unsupported_disk_format(import_format)
+
+    with diskUtils.get_context_manager_tmp_file(is_spooled_temp_file, mode='wb') as tmpfile:
+        read_data(tmpfile)
+        diskUtils.to_raw_from(import_format)(tmpfile.name, str(os.environ['IMPORT_DEVICE']))
+
+if __name__ == '__main__':
+    main()

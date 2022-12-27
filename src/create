@@ -13,9 +13,9 @@ from vagrant_metadata import fetch, forge_metadata_url
 
 # For understand ganeti os: https://docs.ganeti.org/docs/ganeti/2.6/man/ganeti-os-interface.html
 
-utilsLoader = importlib.machinery.SourceFileLoader(
-    'utils', os.path.dirname(Path(__file__).absolute()) + '/utils.py')
-utils = utilsLoader.load_module()
+diskUtilsLoader = importlib.machinery.SourceFileLoader(
+    'disk_utils', os.path.dirname(Path(__file__).absolute()) + '/disk_utils.py')
+diskUtils = diskUtilsLoader.load_module()
 adapterLoader = importlib.machinery.SourceFileLoader(
     'adapter', os.path.dirname(Path(__file__).absolute()) + '/local_file_adapter.py')
 adapter = adapterLoader.load_module()
@@ -120,7 +120,7 @@ def main(url):
             extract_box_disks(metadata, tmpdirname),
             ganeti_disks()
         ):
-            utils.to_raw('qcow2').copy(src, dst)
+            diskUtils.to_raw_from('qcow2')(src, dst)
 
 
 if __name__ == '__main__':

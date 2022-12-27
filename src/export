@@ -6,10 +6,24 @@ import tempfile
 import importlib.machinery
 from pathlib import Path
 
-utilsLoader = importlib.machinery.SourceFileLoader(
-    'utils', os.path.dirname(Path(__file__).absolute()) + '/utils.py')
-utils = utilsLoader.load_module()
+diskUtilsLoader = importlib.machinery.SourceFileLoader(
+    'disk_utils', os.path.dirname(Path(__file__).absolute()) + '/disk_utils.py')
+diskUtils = diskUtilsLoader.load_module()
 
-with tempfile.NamedTemporaryFile('rb') as tmpfilename:
-    utils.RawToVmdk().copy(str(os.environ['EXPORT_DEVICE']), tmpfilename.name)
-    sys.stdout.buffer.write(tmpfilename.read())
+def send_data(file_object):
+    sys.stdout.buffer.write(file_object.read())
+
+
+
+def main():
+    export_compress = os.environ.get('OSP_EXPORT_COMPRESS', False)
+    export_format = os.environ.get('OSP_EXPORT_IMPORT_FORMAT', 'vmdk')
+    is_spooled_temp_file = os.environ.get('OSP_EXPORT_IMPORT_SPOOLED_TEMPORARY_FILE', False)
+    diskUtils.raise_if_unsupported_disk_format(export_format)
+
+    with diskUtils.get_context_manager_tmp_file(is_spooled_temp_file, mode='rb') as tmpfile:
+        diskUtils.from_raw_to(export_format)(str(os.environ['EXPORT_DEVICE']), tmpfile.name, compress=bool(export_compress))
+        send_data(tmpfile)
+
+if __name__ == '__main__':
+    main()
