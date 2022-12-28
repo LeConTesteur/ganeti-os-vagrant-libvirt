@@ -14,12 +14,12 @@ def read_data(file_object):
     file_object.write(sys.stdin.buffer.read())
 
 def main():
-    import_format = os.environ.get('OSP_EXPORT_IMPORT_FORMAT', 'vmdk')
-    prefix_temp_file = os.environ.get('OSP_EXPORT_IMPORT_PREFIX_TEMPORARY_FILE', '/tmp')
+    import_format = os.environ.get('OSP_EXPORT_IMPORT_FORMAT', 'qcow2')
+    memory_temp_dir = os.environ.get('OSP_EXPORT_IMPORT_MEMORY_TEMPORARY_DIR', '/tmp')
 
     diskUtils.raise_if_unsupported_disk_format(import_format)
 
-    with tempfile.NamedTemporaryFile(mode='wb', prefix=prefix_temp_file) as tmpfile:
+    with tempfile.NamedTemporaryFile(mode='wb', dir=memory_temp_dir) as tmpfile:
         read_data(tmpfile)
         diskUtils.to_raw_from(import_format)(tmpfile.name, str(os.environ['IMPORT_DEVICE']))
 

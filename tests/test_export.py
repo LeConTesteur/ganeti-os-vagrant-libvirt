@@ -41,7 +41,7 @@ class TestExportMain(TestCase):
         self.assertTrue(mock_tempfile.called)
         self.assertTrue(mock_send_data.called)
         mock_run.assert_has_calls([
-            mock.call(['/usr/bin/qemu-img', 'convert', '-c', '-f', 'raw', '-O', 'vmdk', '/export/test', mock_tmpfile_enter.name], check=True),
+            mock.call(['/usr/bin/qemu-img', 'convert', '-c', '-f', 'raw', '-O', 'qcow2', '/export/test', mock_tmpfile_enter.name], check=True),
         ])
         mock_send_data.assert_has_calls([
             mock.call(mock_tmpfile_enter)
@@ -50,7 +50,7 @@ class TestExportMain(TestCase):
     @mock.patch('export.send_data')
     @mock.patch.object(tempfile, 'NamedTemporaryFile')
     @mock.patch('subprocess.run')
-    @mock.patch.dict(os.environ, {'OSP_EXPORT_IMPORT_FORMAT':'qcow2', 'EXPORT_DEVICE': '/export/test'})
+    @mock.patch.dict(os.environ, {'OSP_EXPORT_IMPORT_FORMAT':'vmdk', 'EXPORT_DEVICE': '/export/test'})
     def test_main_with_qcow2_format(self, mock_run, mock_tempfile, mock_send_data):
         mock_tmpfile_enter = mock_named_temporary_file('/tmp/export-test')
         mock_tempfile.return_value = mock_tmpfile_enter
@@ -59,7 +59,7 @@ class TestExportMain(TestCase):
         self.assertTrue(mock_tempfile.called)
         self.assertTrue(mock_send_data.called)
         mock_run.assert_has_calls([
-            mock.call(['/usr/bin/qemu-img', 'convert', '-f', 'raw', '-O', 'qcow2', '/export/test', mock_tmpfile_enter.name], check=True),
+            mock.call(['/usr/bin/qemu-img', 'convert', '-f', 'raw', '-O', 'vmdk', '/export/test', mock_tmpfile_enter.name], check=True),
         ])
         mock_send_data.assert_has_calls([
             mock.call(mock_tmpfile_enter)
@@ -78,14 +78,14 @@ class TestExportMain(TestCase):
     @mock.patch('export.send_data')
     @mock.patch.object(tempfile, 'NamedTemporaryFile')
     @mock.patch('subprocess.run')
-    @mock.patch.dict(os.environ, {'OSP_EXPORT_IMPORT_PREFIX_TEMPORARY_FILE':'/test/', 'EXPORT_DEVICE': '/export/test'})
+    @mock.patch.dict(os.environ, {'OSP_EXPORT_IMPORT_MEMORY_TEMPORARY_DIR':'/test/', 'EXPORT_DEVICE': '/export/test'})
     def test_main_with_spooled_option(self, mock_run, mock_tempfile_named, mock_send_data):
         mock_tempfile_named_enter = mock_named_temporary_file('/tmp/export-test')
         mock_tempfile_named.return_value = mock_tempfile_named_enter
         export.main()
         self.assertTrue(mock_tempfile_named.called)
         mock_tempfile_named.assert_has_calls([
-            mock.call(mode='rb', prefix='/test/'),
+            mock.call(mode='rb', dir='/test/'),
         ])
 
 if __name__ == '__main__':
